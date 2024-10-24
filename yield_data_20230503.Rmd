@@ -1,0 +1,46 @@
+---
+title: "yield_data"
+author: "Luke Salvato"
+date: '2023-05-04'
+output: html_document
+---
+#Yield
+Load all yield files
+convert units
+compute ten year average yields
+```{r}
+dat <- "/Users/lukesalvato/Library/CloudStorage/Dropbox/Mac (3)/Documents/Land_Use/perennial/data_raw"
+
+
+tbl <- list.files(dat, pattern = "yield.csv", full.names = TRUE) %>% 
+     map_df(~read_csv(., col_types = cols(.default = "c"))) %>% 
+  filter(Period == "YEAR") %>%
+  dplyr::select("Year", "Commodity","Data Item", "Value") %>% 
+  mutate(Value = as.numeric(gsub(",", "", Value))) %>% 
+  mutate(yield_mtph = case_when(Commodity == "ALMONDS" ~ Value*0.00112085,
+                                Commodity == "RICE" ~ Value*0.00112085,
+                                Commodity == "WALNUTS" ~ Value*2.2417)) %>% 
+  filter(Year %in% c(2012:2021))
+
+tbl_sum <- tbl %>% 
+  group_by(Commodity) %>% 
+  summarise(mean_yield = mean(yield_mtph))
+```
+
+#Price
+compute tem year price average
+join with yield to compute price per hectare
+```{r}
+price <- read_csv("/Users/lukesalvato/Library/CloudStorage/Dropbox/Mac (3)/Documents/Land_Use/perennial/data_processed/price_data_clean_20230503.csv")
+
+price_clean <- price %>% 
+  filter(Year %in% 2012:2021) %>% 
+  group_by(Commodity) %>% 
+  summarise(price = mean(real_price_2021))
+
+price_yield<-
+  full_join(tbl_sum, price_clean) %>% 
+  mutate(price_pa = mean_yield*price)
+#price
+```
+

@@ -1,0 +1,60 @@
+---
+title: "price_data"
+author: "Luke Salvato"
+date: '2023-04-06'
+output: html_document
+---
+# Load price data
+```{r setup, include=FALSE}
+library(tidyverse)
+library(trend)
+
+price <- read_csv("/Users/lukesalvato/Library/CloudStorage/Dropbox/Mac (3)/Documents/Land_Use/perennial/data_processed/price_data_clean_20230503.csv")
+
+
+```
+#Price time series  plot
+```{r}
+price_plot <- price %>% 
+  mutate(crop = factor(Commodity, levels = c("RICE", "ALMONDS", "WALNUTS"))) %>% 
+ggplot(aes(x = Year, y = real_price_2021))+
+         geom_point()+
+         geom_line()+
+ # geom_smooth(method = "lm", se = FALSE)+
+        facet_grid(crop~., scales = "free")+
+  theme_bw()+
+  ylab("$ per metric ton")+
+  xlab(NULL)+
+  theme_bw()+
+  scale_y_continuous(label=comma)+
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18))
+price_plot
+
+ggsave(price_plot, filename = "/Users/lukesalvato/Library/CloudStorage/Dropbox/Mac (3)/Documents/Land_Use/perennial/output/price_time_series_20230503.png", width = 9, height = 7 )
+```
+
+#Man kendal test information
+```{r}
+
+almond <- price %>% filter(crop == "ALMONDS") %>% 
+  select(real_rice_2021) %>% 
+  as_vector()
+mk.test(almond, continuity = TRUE)
+#pmk = 0.149 not significant slight decrease
+
+
+walnut <- price %>% filter(crop == "WALNUTS") %>% 
+  select(real_rice_2021) %>% 
+  as_vector()
+mk.test(walnut, continuity = TRUE)
+#pmk = 0.024 (significant but slight decrease)
+rice <- price %>% filter(crop == "RICE") %>% 
+  select(real_rice_2021) %>% 
+  as_vector()
+mk.test(rice, continuity = TRUE)
+#pmk = 0.9, tau = -0.030 
+
+```
+
+
